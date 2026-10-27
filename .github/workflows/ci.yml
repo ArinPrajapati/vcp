@@ -12,6 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: shellcheck
+        if: runner.os == 'Linux'
         run: shellcheck bin/vcp test/test.sh install.sh uninstall.sh
       - name: tests (fake vercel, no network)
         run: sh test/test.sh
