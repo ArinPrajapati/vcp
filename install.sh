@@ -54,7 +54,7 @@ cat <<MSG
 vcp is installed. Open a new terminal, then:
 
   vcp import me      # adopt your current Vercel login as profile "me"
-  vcp add work       # or log in a second account as "work"
+  vcp add work       # or log in another account as "work"
   vcp doctor         # check everything
   fish users: fish_add_path -m $DIR/bin
 

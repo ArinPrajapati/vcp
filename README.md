@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/banner.svg" alt="vcp: two Vercel accounts, one laptop" width="720"></p>
+<p align="center"><img src="assets/banner.svg" alt="vcp: switch between Vercel accounts" width="720"></p>
 
 <p align="center">
   <a href="https://github.com/ArinPrajapati/vcp/actions/workflows/ci.yml"><img src="https://github.com/ArinPrajapati/vcp/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/deps-none-444" alt="no dependencies">
 </p>
 
-**vcp** lets you use two (or more) personal Vercel accounts on one machine without logging out and back in. It is not for teams or orgs: the Vercel CLI already handles those. This is for the case where you are *two different users*, for example a personal account and a client or employer account.
+**vcp** lets you use as many personal Vercel accounts as you need on one machine, without logging out and back in. It is not for teams or orgs: the Vercel CLI already handles those. This is for the case where you are *several different users*, for example a personal account and a client or employer account.
 
 ```sh
 vcp pin work          # this repo belongs to "work"
@@ -22,7 +22,7 @@ The Vercel CLI keeps one login in one folder. Switching accounts means `vercel l
 
 ## Who it is for
 
-vcp helps when you are **two different Vercel users on one machine**, not one user in two teams. The common cases:
+vcp helps when you are **more than one Vercel user on one machine**, not one user in two teams. The common cases:
 
 | Scenario | The problem | With vcp |
 | --- | --- | --- |
@@ -51,7 +51,7 @@ Open a new terminal, then:
 
 ```sh
 vcp import personal    # adopt the Vercel login you already have
-vcp add work           # log in your second account (opens the browser)
+vcp add work           # log in another account (opens the browser); add as many as you need
 vcp doctor             # checks PATH, profiles and logins
 ```
 

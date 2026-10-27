@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="260" viewBox="0 0 900 260" role="img" aria-label="vcp: two Vercel accounts, one laptop">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="260" viewBox="0 0 900 260" role="img" aria-label="vcp: switch between Vercel accounts">
   <rect width="900" height="260" rx="16" fill="#0a0a0a"/>
   <rect x="0.5" y="0.5" width="899" height="259" rx="15.5" fill="none" stroke="#262626"/>
   <text x="56" y="112" font-family="Geist, 'SF Mono', Menlo, monospace" font-size="64" font-weight="700" fill="#ededed">vcp</text>
-  <text x="56" y="160" font-family="Geist, system-ui, sans-serif" font-size="26" fill="#a1a1a1">Two Vercel accounts. One laptop. No logging out.</text>
+  <text x="56" y="160" font-family="Geist, system-ui, sans-serif" font-size="26" fill="#a1a1a1">Every Vercel account, one laptop. No logging out.</text>
   <g font-family="'SF Mono', Menlo, monospace" font-size="18">
     <text x="56" y="214" fill="#6b6b6b">$</text>
     <text x="76" y="214" fill="#ededed">vcp pin work &amp;&amp; vercel deploy</text>
