@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Switch Vercel accounts in the CLI: logout, login, or vcp</title>
+<meta name="description" content="How to switch Vercel accounts in the CLI. Learn what vercel logout, vercel login and vercel switch each do, and how to avoid logging out every time.">
+<link rel="canonical" href="https://vcp-cli.vercel.app/guides/switch-vercel-account-cli/">
+<meta name="theme-color" content="#0c1220">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="vcp">
+<meta property="og:title" content="Switch Vercel accounts in the CLI: logout, login, or vcp">
+<meta property="og:description" content="How to switch Vercel accounts in the CLI. Learn what vercel logout, vercel login and vercel switch each do, and how to avoid logging out every time.">
+<meta property="og:url" content="https://vcp-cli.vercel.app/guides/switch-vercel-account-cli/">
+<meta property="og:image" content="https://vcp-cli.vercel.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Switch Vercel accounts in the CLI: logout, login, or vcp">
+<meta name="twitter:description" content="How to switch Vercel accounts in the CLI. Learn what vercel logout, vercel login and vercel switch each do, and how to avoid logging out every time.">
+<meta name="twitter:image" content="https://vcp-cli.vercel.app/og.png">
+<link rel="stylesheet" href="/style.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"Switch Vercel accounts in the CLI: logout, login, or vcp","description":"How to switch Vercel accounts in the CLI. Learn what vercel logout, vercel login and vercel switch each do, and how to avoid logging out every time.","url":"https://vcp-cli.vercel.app/guides/switch-vercel-account-cli/","mainEntityOfPage":"https://vcp-cli.vercel.app/guides/switch-vercel-account-cli/","datePublished":"2026-10-27","dateModified":"2026-10-27","inLanguage":"en","image":"https://vcp-cli.vercel.app/og.png"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"vcp","item":"https://vcp-cli.vercel.app/"},{"@type":"ListItem","position":2,"name":"Switch accounts in the CLI","item":"https://vcp-cli.vercel.app/guides/switch-vercel-account-cli/"}]}]}</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/" aria-label="vcp home">vcp</a>
+    <nav class="top" aria-label="Main">
+      <a href="/guides/multiple-vercel-accounts/">Guides</a>
+      <a href="/#faq">FAQ</a>
+      <a href="https://github.com/ArinPrajapati/vcp">GitHub</a>
+    </nav>
+  </header>
+  <main id="main">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">vcp</a> / Guides / Switch accounts in the CLI</nav>
+  <article class="g">
+    <p class="meta">Updated 27 October 2026</p>
+    <h1>How to switch Vercel accounts in the CLI</h1>
+    <p class="lead">Short answer: <code>vercel logout</code>, then <code>vercel login</code> with the other account. That works, but you will repeat it all day. This guide covers what each command does and how to stop switching by hand.</p>
+
+    <h2>Step by step: switch accounts with logout and login</h2>
+    <pre class="code">vercel whoami     # see who you are right now
+vercel logout     # remove the stored login
+vercel login      # sign in as the other account
+vercel whoami     # confirm</pre>
+    <p>The CLI stores one login, so this replaces it. The old account is signed out, and you have to repeat the browser sign-in each time you switch back.</p>
+
+    <h2>Accounts and teams are different</h2>
+    <p>A Vercel <strong>account</strong> is a user you log in as. A <strong>team</strong> is a workspace one account can belong to. <code>vercel switch</code> and the <code>--scope</code> flag move between teams inside the account you are logged in as. They do not change the user.</p>
+    <pre class="code">vercel switch my-team          # change team scope
+vercel deploy --scope my-team  # one command, another team</pre>
+    <p>If your two "accounts" are really two teams under one login, you do not need anything else. If they are two separate users, with different emails, you need to switch the login itself.</p>
+
+    <h2>Stop logging out: one profile per account</h2>
+    <p>The CLI can read its login from any folder you point it at. <a href="/">vcp</a> keeps one folder per account and chooses between them for you:</p>
+    <pre class="code">vcp import personal    # keep your current login
+vcp add work           # log in the other account once
+vcp ls                 # list profiles
+vcp use work           # set the default
+vcp pin personal       # or pin the current repo to one account
+vcp as work whoami     # run one command as another account</pre>
+    <p>After that, <code>vercel</code> and <code>vc</code> work as usual. To see which account a command will use, run <code>vcp current</code>. It shows the profile and where the choice came from.</p>
+
+    <h2>If a deploy says "project not found" after switching</h2>
+    <p>The folder's <code>.vercel/project.json</code> points to a project owned by the other account. Either switch back to the account that owns it, or relink the repo with <code>vercel link</code> under the account you want. With vcp, pin the repo to the owning profile so it always runs as the right user.</p>
+    <p>For the manual methods compared side by side, read <a href="/guides/multiple-vercel-accounts/">how to use multiple Vercel accounts on one computer</a>.</p>
+  </article>
+  </main>
+  <footer>
+    <div class="row">
+      <div><a href="/">vcp</a><a href="https://github.com/ArinPrajapati/vcp">GitHub</a><a href="/guides/multiple-vercel-accounts/">Multiple accounts guide</a><a href="/guides/switch-vercel-account-cli/">Switch accounts in the CLI</a></div>
+      <div>MIT licensed. Not affiliated with Vercel.</div>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# vcp
+
+> vcp is a free, open-source command line tool (MIT, POSIX sh) that lets you use multiple Vercel accounts on one macOS or Linux machine without logging out. Each account is a profile with its own login; the right profile is chosen per repo with a .vercel-profile file, per terminal with VERCEL_PROFILE, or by a global default.
+
+## Docs
+- [Home and FAQ](https://vcp-cli.vercel.app/): what it does, setup in three steps, commands, comparison
+- [How to use multiple Vercel accounts on one computer](https://vcp-cli.vercel.app/guides/multiple-vercel-accounts/): manual --global-config folders, tokens, or vcp
+- [How to switch Vercel accounts in the CLI](https://vcp-cli.vercel.app/guides/switch-vercel-account-cli/): logout/login, vercel switch for teams, and profiles
+
+## Source
+- [GitHub repository](https://github.com/ArinPrajapati/vcp): install script, README, tests

@@ -7,6 +7,8 @@
   <img src="https://img.shields.io/badge/deps-none-444" alt="no dependencies">
 </p>
 
+<p align="center"><strong><a href="https://vcp-cli.vercel.app">Website and guides: vcp-cli.vercel.app</a></strong></p>
+
 **vcp** lets you use as many personal Vercel accounts as you need on one machine, without logging out and back in. It is not for teams or orgs: the Vercel CLI already handles those. This is for the case where you are *several different users*, for example a personal account and a client or employer account.
 
 ```sh
@@ -106,6 +108,10 @@ Because the shims are real executables on PATH, agents and scripts get the same 
 ~/.config/vcp/uninstall.sh            # removes the PATH blocks, keeps your logins
 ~/.config/vcp/uninstall.sh --purge    # also deletes ~/.vercel-profiles
 ```
+
+## Website
+
+The site at [vcp-cli.vercel.app](https://vcp-cli.vercel.app) lives in [`site/`](site/): plain HTML and CSS with no build step, plus two guides ([multiple Vercel accounts](https://vcp-cli.vercel.app/guides/multiple-vercel-accounts/), [switching accounts in the CLI](https://vcp-cli.vercel.app/guides/switch-vercel-account-cli/)). Preview it with `python3 -m http.server --directory site`, and deploy it with `cd site && vercel deploy --prod`.
 
 ## Development
 

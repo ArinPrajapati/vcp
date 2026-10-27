@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Use multiple Vercel accounts on one computer</title>
+<meta name="description" content="Three ways to use multiple Vercel accounts on one computer: separate CLI config folders, tokens, or vcp. Steps, commands and trade-offs.">
+<link rel="canonical" href="https://vcp-cli.vercel.app/guides/multiple-vercel-accounts/">
+<meta name="theme-color" content="#0c1220">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="vcp">
+<meta property="og:title" content="Use multiple Vercel accounts on one computer">
+<meta property="og:description" content="Three ways to use multiple Vercel accounts on one computer: separate CLI config folders, tokens, or vcp. Steps, commands and trade-offs.">
+<meta property="og:url" content="https://vcp-cli.vercel.app/guides/multiple-vercel-accounts/">
+<meta property="og:image" content="https://vcp-cli.vercel.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Use multiple Vercel accounts on one computer">
+<meta name="twitter:description" content="Three ways to use multiple Vercel accounts on one computer: separate CLI config folders, tokens, or vcp. Steps, commands and trade-offs.">
+<meta name="twitter:image" content="https://vcp-cli.vercel.app/og.png">
+<link rel="stylesheet" href="/style.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"Use multiple Vercel accounts on one computer","description":"Three ways to use multiple Vercel accounts on one computer: separate CLI config folders, tokens, or vcp. Steps, commands and trade-offs.","url":"https://vcp-cli.vercel.app/guides/multiple-vercel-accounts/","mainEntityOfPage":"https://vcp-cli.vercel.app/guides/multiple-vercel-accounts/","datePublished":"2026-10-27","dateModified":"2026-10-27","inLanguage":"en","image":"https://vcp-cli.vercel.app/og.png"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"vcp","item":"https://vcp-cli.vercel.app/"},{"@type":"ListItem","position":2,"name":"Multiple Vercel accounts","item":"https://vcp-cli.vercel.app/guides/multiple-vercel-accounts/"}]}]}</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/" aria-label="vcp home">vcp</a>
+    <nav class="top" aria-label="Main">
+      <a href="/guides/multiple-vercel-accounts/">Guides</a>
+      <a href="/#faq">FAQ</a>
+      <a href="https://github.com/ArinPrajapati/vcp">GitHub</a>
+    </nav>
+  </header>
+  <main id="main">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">vcp</a> / Guides / Multiple Vercel accounts</nav>
+  <article class="g">
+    <p class="meta">Updated 27 October 2026</p>
+    <h1>How to use multiple Vercel accounts on one computer</h1>
+    <p class="lead">The Vercel CLI remembers one login. Here are three ways to work with more than one account, from a manual setup to a one-command tool, and when each one makes sense.</p>
+
+    <h2>Why the CLI only handles one account</h2>
+    <p>When you run <code>vercel login</code>, the CLI saves your token in a global config folder. On macOS that is <code>~/Library/Application Support/com.vercel.cli</code>. Every command reads that same folder, so it can only ever act as one user.</p>
+    <p>The CLI does have a flag that points it at a different folder: <code>--global-config</code> (short form <code>-Q</code>). All three methods below rely on that idea or on tokens.</p>
+
+    <h2>Method 1: separate config folders by hand</h2>
+    <p>Give each account its own folder and pass it on every command.</p>
+    <pre class="code">vercel --global-config ~/.vercel-work login
+vercel --global-config ~/.vercel-work whoami
+
+# shorter, in your shell rc file
+alias vcw='vercel --global-config ~/.vercel-work'</pre>
+    <p>This works and needs nothing installed. The catch is that you have to remember which command to use in which repo. Run plain <code>vercel</code> in the wrong place and you are using the wrong account.</p>
+
+    <h2>Method 2: a token per account</h2>
+    <p>Create an access token for each account in the Vercel dashboard, then pass it with <code>VERCEL_TOKEN</code> or <code>--token</code>.</p>
+    <pre class="code">VERCEL_TOKEN=&lt;work-token&gt; vercel deploy</pre>
+    <p>This is the right choice for CI, where there is no browser. On a laptop it means creating, storing and rotating a token for every account, and you still choose the token by hand each time.</p>
+
+    <h2>Method 3: vcp, which picks the account per repo</h2>
+    <p><a href="/">vcp</a> automates Method 1. Each account becomes a profile, and the right one is chosen from the folder you are in.</p>
+    <pre class="code">curl -fsSL https://raw.githubusercontent.com/ArinPrajapati/vcp/main/install.sh | sh
+
+vcp import personal   # adopt your current login
+vcp add work          # log in a second account
+
+cd ~/client-site
+vcp pin work          # this repo now uses "work"
+vercel whoami         # runs as the work account</pre>
+    <p>Outside that repo, <code>vercel</code> uses your default profile. You can add as many profiles as you need, and two terminals can use two different accounts at the same time.</p>
+
+    <h2>Which method should you use?</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Situation</th><th>Best fit</th></tr></thead>
+      <tbody>
+        <tr><td>Two accounts on a laptop, many repos</td><td>vcp</td></tr>
+        <tr><td>One-off use, nothing to install</td><td>Method 1, separate folders</td></tr>
+        <tr><td>CI or scripts without a browser</td><td>Method 2, tokens</td></tr>
+        <tr><td>One login, several teams</td><td><code>vercel switch</code>, no extra tool</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>A gotcha: projects belong to an account</h2>
+    <p>The <code>.vercel/project.json</code> file that <code>vercel link</code> creates refers to a project owned by one account. Open that repo under a different login and you will get a "project not found" or scope error. Always run a repo under the account that owns it, which is exactly what pinning a profile does.</p>
+    <p>Continue with <a href="/guides/switch-vercel-account-cli/">how to switch accounts in the Vercel CLI</a>, or see <a href="/#faq">the FAQ</a>.</p>
+  </article>
+  </main>
+  <footer>
+    <div class="row">
+      <div><a href="/">vcp</a><a href="https://github.com/ArinPrajapati/vcp">GitHub</a><a href="/guides/multiple-vercel-accounts/">Multiple accounts guide</a><a href="/guides/switch-vercel-account-cli/">Switch accounts in the CLI</a></div>
+      <div>MIT licensed. Not affiliated with Vercel.</div>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

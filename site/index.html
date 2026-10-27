@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>vcp: use multiple Vercel accounts on one machine</title>
+<meta name="description" content="vcp is a free, open-source tool that switches between multiple Vercel accounts without logging out. Pin each repo to the right account. macOS and Linux.">
+<link rel="canonical" href="https://vcp-cli.vercel.app/">
+<meta name="theme-color" content="#0c1220">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vcp">
+<meta property="og:title" content="vcp: use multiple Vercel accounts on one machine">
+<meta property="og:description" content="Switch between Vercel accounts without logging out. Each repo uses the account that owns it.">
+<meta property="og:url" content="https://vcp-cli.vercel.app/">
+<meta property="og:image" content="https://vcp-cli.vercel.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vcp: switch between Vercel accounts without logging out">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="vcp: use multiple Vercel accounts on one machine">
+<meta name="twitter:description" content="Switch between Vercel accounts without logging out. Each repo uses the account that owns it.">
+<meta name="twitter:image" content="https://vcp-cli.vercel.app/og.png">
+<link rel="stylesheet" href="/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"WebSite","@id":"https://vcp-cli.vercel.app/#site","url":"https://vcp-cli.vercel.app/","name":"vcp","description":"Switch between multiple Vercel accounts without logging out.","inLanguage":"en"},
+{"@type":"SoftwareApplication","@id":"https://vcp-cli.vercel.app/#app","name":"vcp","url":"https://vcp-cli.vercel.app/","description":"A command line tool that gives each Vercel account its own login and picks the right one for the folder you are in.","applicationCategory":"DeveloperApplication","operatingSystem":"macOS, Linux","softwareRequirements":"Vercel CLI, git, POSIX sh","license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"codeRepository":"https://github.com/ArinPrajapati/vcp","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Can I use more than two Vercel accounts?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every account is its own profile, and there is no limit on how many you add. Run vcp add with a new name for each one."}},
+{"@type":"Question","name":"Does vcp work with Vercel teams?","acceptedAnswer":{"@type":"Answer","text":"vcp is for separate personal logins. If you are one user who belongs to several teams, use the Vercel CLI's own vercel switch command or the --scope flag. You can still use teams inside each profile."}},
+{"@type":"Question","name":"Where are my logins stored, and is it safe?","acceptedAnswer":{"@type":"Answer","text":"Each profile is a folder in ~/.vercel-profiles with the same auth.json the Vercel CLI writes. The folders are private to your user (mode 700, files mode 600). vcp never prints or sends tokens, makes no network calls of its own, and has no telemetry."}},
+{"@type":"Question","name":"Does it work in CI?","acceptedAnswer":{"@type":"Answer","text":"Yes. In CI, set VERCEL_TOKEN as usual. When vcp sees a token, a --token flag or --global-config, it steps aside and runs the Vercel CLI unchanged."}},
+{"@type":"Question","name":"Does vcp replace the Vercel CLI?","acceptedAnswer":{"@type":"Answer","text":"No. The vercel and vc commands become thin shims that choose a profile, add the --global-config flag, and run the real Vercel CLI. Everything else behaves as before."}},
+{"@type":"Question","name":"Does it run on Windows?","acceptedAnswer":{"@type":"Answer","text":"vcp runs on macOS and Linux with a POSIX shell. Windows is not supported directly, but it works inside WSL."}},
+{"@type":"Question","name":"How do I uninstall it?","acceptedAnswer":{"@type":"Answer","text":"Run ~/.config/vcp/uninstall.sh. It removes the PATH lines vcp added and keeps your logins. Add --purge to delete the profiles too."}}
+]}]}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/" aria-label="vcp home">vcp</a>
+    <nav class="top" aria-label="Main">
+      <a href="/guides/multiple-vercel-accounts/">Guides</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/ArinPrajapati/vcp">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <div class="hero">
+      <div>
+        <h1>Switch between Vercel accounts without logging out.</h1>
+        <p class="lead" style="margin-top:20px">vcp gives each Vercel account its own login and picks the right one for the folder you are in. Deploy from any repo and it goes to the account that owns it.</p>
+        <div class="install">
+          <code id="cmd">curl -fsSL https://raw.githubusercontent.com/ArinPrajapati/vcp/main/install.sh | sh</code>
+          <button id="copy" type="button">Copy</button>
+        </div>
+        <p class="fine">Free and open source (MIT). macOS and Linux. Needs the <a href="https://vercel.com/docs/cli">Vercel CLI</a> and git. <a href="https://github.com/ArinPrajapati/vcp/blob/main/install.sh">Read the script first</a>.</p>
+      </div>
+      <div>
+        <div class="term" role="group" aria-label="Terminal demo: the same command gives a different account in each folder">
+          <div class="tabs" role="tablist">
+            <button type="button" role="tab" data-p="work" aria-selected="true">~/client-site</button>
+            <button type="button" role="tab" data-p="personal" aria-selected="false">~/side-project</button>
+          </div>
+          <div class="panes">
+            <div class="pane on">
+              <div class="l"><span class="ps">~/client-site</span> $ vcp current<span class="chip work">work</span></div>
+              <div class="l out">work (from ~/client-site/.vercel-profile)</div>
+              <div class="l"><span class="ps">~/client-site</span> $ vercel whoami</div>
+              <div class="l out"><b class="work-t">acme</b></div>
+            </div>
+            <div class="pane">
+              <div class="l"><span class="ps">~/side-project</span> $ vcp current<span class="chip personal">personal</span></div>
+              <div class="l out">personal (from global)</div>
+              <div class="l"><span class="ps">~/side-project</span> $ vercel whoami</div>
+              <div class="l out"><b class="personal-t">sam</b></div>
+            </div>
+          </div>
+        </div>
+        <p class="cap">Same command, different folder, different account. No logout, no login.</p>
+      </div>
+    </div>
+
+    <section id="problem">
+      <div class="col">
+        <h2>The Vercel CLI keeps one login</h2>
+        <p>The Vercel CLI stores a single login in a single folder. If you use more than one Vercel account, say a job and a side project, or one per client, you have two choices. Run <code>vercel logout</code> and <code>vercel login</code> every time you switch, or risk a deploy to the wrong account.</p>
+        <p>The mistake is easy to make and tedious to undo. A project is also linked to the account that created it, so a repo opened under the other login fails with "project not found".</p>
+        <p>vcp fixes this by giving every account its own login folder and choosing between them for you.</p>
+      </div>
+    </section>
+
+    <section id="setup">
+      <div class="col">
+        <h2>Set up in three steps</h2>
+        <ol class="steps">
+          <li><div><h3>Install</h3></div><div class="b"><p>Run the install command above, then open a new terminal. <code>vcp doctor</code> checks that everything is in place.</p></div></li>
+          <li><div><h3>Add your accounts</h3></div><div class="b"><p>Import the login you already have, then log in to each other account. Add as many as you need.</p>
+<pre class="code">vcp import personal   # adopt your current Vercel login
+vcp add work          # opens the browser to log in</pre></div></li>
+          <li><div><h3>Pin each repo to its account</h3></div><div class="b"><p>Run this once inside a repo. It writes a small <code>.vercel-profile</code> file, and every subfolder uses it.</p>
+<pre class="code">cd ~/client-site
+vcp pin work
+vercel deploy        # prints: vcp: profile work (...)</pre></div></li>
+        </ol>
+        <h3 style="margin-top:36px">How vcp picks the account</h3>
+        <p>The first match wins:</p>
+        <ol>
+          <li><code>VERCEL_PROFILE</code>, to change one terminal only</li>
+          <li>The nearest <code>.vercel-profile</code> file, searched upward from the current folder</li>
+          <li>The global default you set with <code>vcp use</code></li>
+        </ol>
+        <p>Under the hood each profile is a folder in <code>~/.vercel-profiles/</code>, and vcp runs the real Vercel CLI with its <code>--global-config</code> flag pointed at it. There is no background process and nothing to patch.</p>
+      </div>
+    </section>
+
+    <section id="commands">
+      <h2>Commands</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>vcp ls</code></td><td>List profiles. A star marks the one in effect.</td></tr>
+          <tr><td><code>vcp current</code></td><td>Show which profile is active and why.</td></tr>
+          <tr><td><code>vcp whoami</code></td><td>Ask Vercel which user the active profile is.</td></tr>
+          <tr><td><code>vcp add &lt;name&gt;</code></td><td>Create a profile and log in.</td></tr>
+          <tr><td><code>vcp import &lt;name&gt;</code></td><td>Copy your existing Vercel login into a profile.</td></tr>
+          <tr><td><code>vcp pin [name]</code></td><td>Pin the current folder tree to a profile.</td></tr>
+          <tr><td><code>vcp use &lt;name&gt;</code></td><td>Set the global default profile.</td></tr>
+          <tr><td><code>vcp as &lt;name&gt; &lt;args&gt;</code></td><td>Run one Vercel command as another profile.</td></tr>
+          <tr><td><code>vcp rm &lt;name&gt;</code></td><td>Delete a profile and its login.</td></tr>
+          <tr><td><code>vcp doctor</code></td><td>Check PATH, profiles and logins.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="fine">Deploy-style commands print the active profile on stderr, so you always see where a deploy is going. Set <code>VCP_QUIET=1</code> to silence it.</p>
+    </section>
+
+    <section id="who">
+      <div class="col">
+        <h2>Who it is for</h2>
+        <p>vcp helps when you are more than one Vercel user on one machine. It is not for one user in several teams, which the Vercel CLI already handles.</p>
+      </div>
+      <dl class="scen">
+        <div><dt>Job and side projects</dt><dd>Work has its own Vercel account and your side projects live on a personal one. Pin the work repos to the work profile and everything else stays personal.</dd></div>
+        <div><dt>Freelancers and consultants</dt><dd>Each client gave you a login. Make one profile per client and you are signed in as the right one as soon as you open their repo.</dd></div>
+        <div><dt>Open-source maintainers</dt><dd>Keep a personal account and a separate account that owns a project's site or docs.</dd></div>
+        <div><dt>Production separation</dt><dd>Company policy keeps production on its own account. A pinned repo can only deploy where its pin says.</dd></div>
+        <div><dt>Demos and streams</dt><dd>Use a clean demo account on screen with <code>VERCEL_PROFILE=demo</code> in that terminal only.</dd></div>
+        <div><dt>AI coding agents</dt><dd>Agents run <code>vercel</code> in many repos. Pins make each run use the right account instead of whichever login was last.</dd></div>
+      </dl>
+      <div class="col" style="margin-top:22px">
+        <p class="fine"><strong>You do not need vcp</strong> if you have one Vercel account, if you only need to move between teams (use <code>vercel switch</code> or <code>--scope</code>), or in CI (use a token in <code>VERCEL_TOKEN</code>).</p>
+      </div>
+    </section>
+
+    <section id="compare">
+      <h2>How it compares</h2>
+      <div class="tw"><table>
+        <thead><tr><th></th><th>vcp</th><th>logout and login</th><th>Swap auth.json by hand</th><th>A token per account</th></tr></thead>
+        <tbody>
+          <tr><td>Two accounts at once, in two terminals</td><td class="y">Yes</td><td class="n">No</td><td class="n">No</td><td class="y">Yes</td></tr>
+          <tr><td>Picks the account per repo</td><td class="y">Yes, automatic</td><td class="n">No</td><td class="n">No</td><td class="n">Only if you wire it up</td></tr>
+          <tr><td>Safe if you forget to switch</td><td class="y">Yes, the repo decides</td><td class="n">No</td><td class="n">No</td><td class="n">Depends on your setup</td></tr>
+          <tr><td>Tokens to create and store</td><td class="y">None, normal browser login</td><td class="y">None</td><td class="y">None</td><td class="n">One per account</td></tr>
+          <tr><td>Setup</td><td class="y">One command, once</td><td class="y">None</td><td class="n">A script you maintain</td><td class="n">Per project or shell</td></tr>
+        </tbody>
+      </table></div>
+      <p class="fine">Need the manual version? The <a href="/guides/multiple-vercel-accounts/">multiple Vercel accounts guide</a> shows how to do it with plain <code>--global-config</code> folders and no tools.</p>
+    </section>
+
+    <section id="faq">
+      <div class="col">
+        <h2>Questions</h2>
+        <details><summary>Can I use more than two Vercel accounts?</summary><p>Yes. Every account is its own profile, and there is no limit on how many you add. Run <code>vcp add</code> with a new name for each one.</p></details>
+        <details><summary>Does vcp work with Vercel teams?</summary><p>vcp is for separate personal logins. If you are one user who belongs to several teams, use the Vercel CLI's own <code>vercel switch</code> command or the <code>--scope</code> flag. You can still use teams inside each profile.</p></details>
+        <details><summary>Where are my logins stored, and is it safe?</summary><p>Each profile is a folder in <code>~/.vercel-profiles</code> with the same <code>auth.json</code> the Vercel CLI writes. The folders are private to your user (mode 700, files mode 600). vcp never prints or sends tokens, makes no network calls of its own, and has no telemetry.</p></details>
+        <details><summary>Does it work in CI?</summary><p>Yes. In CI, set <code>VERCEL_TOKEN</code> as usual. When vcp sees a token, a <code>--token</code> flag or <code>--global-config</code>, it steps aside and runs the Vercel CLI unchanged.</p></details>
+        <details><summary>Does vcp replace the Vercel CLI?</summary><p>No. The <code>vercel</code> and <code>vc</code> commands become thin shims that choose a profile, add the <code>--global-config</code> flag, and run the real Vercel CLI. Everything else behaves as before.</p></details>
+        <details><summary>Does it run on Windows?</summary><p>vcp runs on macOS and Linux with a POSIX shell. Windows is not supported directly, but it works inside WSL.</p></details>
+        <details><summary>How do I uninstall it?</summary><p>Run <code>~/.config/vcp/uninstall.sh</code>. It removes the PATH lines vcp added and keeps your logins. Add <code>--purge</code> to delete the profiles too.</p></details>
+      </div>
+    </section>
+
+    <section id="get">
+      <div class="col">
+        <h2><span class="dots" aria-hidden="true"><i class="a"></i><i class="b"></i><i class="c"></i></span>Get vcp</h2>
+        <p>One command to install, and your first profile takes about a minute.</p>
+        <a class="cta" href="https://github.com/ArinPrajapati/vcp">View on GitHub</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="row">
+      <div><a href="https://github.com/ArinPrajapati/vcp">GitHub</a><a href="/guides/multiple-vercel-accounts/">Multiple accounts guide</a><a href="/guides/switch-vercel-account-cli/">Switch accounts in the CLI</a></div>
+      <div>MIT licensed. Not affiliated with Vercel.</div>
+    </div>
+  </footer>
+</div>
+<script src="/app.js" defer></script>
+</body>
+</html>
