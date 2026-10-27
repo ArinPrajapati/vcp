@@ -12,7 +12,7 @@ END="# <<< vcp <<<"
 say() { printf 'vcp-install: %s\n' "$1"; }
 
 # 1. Get the code. If run from a clone, use that clone in place.
-HERE=$(cd "$(dirname "$0")" 2>/dev/null && pwd || true)
+HERE=$(cd "$(dirname "$0")" 2>/dev/null && pwd) || HERE=""
 if [ -n "$HERE" ] && [ -x "$HERE/bin/vcp" ] && [ "$HERE" != "$DIR" ] && [ ! -e "$DIR" ]; then
   mkdir -p "$(dirname "$DIR")"
   ln -s "$HERE" "$DIR"
