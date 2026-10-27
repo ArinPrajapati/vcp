@@ -1,0 +1,218 @@
+#!/bin/sh
+# vcp: switch between Vercel accounts (personal logins, not teams) by giving
+# each one its own Vercel CLI global-config dir. Invoked as `vercel` or `vc`
+# it is a transparent shim; invoked as `vcp` it manages profiles.
+set -u
+
+VCP_VERSION="0.1.0"
+
+PROFILES_DIR="${VCP_HOME:-$HOME/.vercel-profiles}"
+ACTIVE_FILE="$PROFILES_DIR/.active"
+PIN_FILE=".vercel-profile"
+SELF_DIR=$(cd "$(dirname "$0")" && pwd)
+
+die() { printf 'vcp: %s\n' "$1" >&2; [ -n "${2:-}" ] && printf '  fix: %s\n' "$2" >&2; exit 1; }
+
+valid_name() { case "$1" in ''|*[!a-z0-9_-]*) return 1 ;; *) return 0 ;; esac; }
+
+profile_dir() { printf '%s/%s' "$PROFILES_DIR" "$1"; }
+
+require_profile() {
+  valid_name "$1" || die "invalid profile name '$1'" "use lowercase letters, digits, - or _"
+  [ -d "$(profile_dir "$1")" ] || die "no profile named '$1'" "run: vcp add $1"
+}
+
+# Prints "<name> <source>" for the profile in effect, or returns 1.
+resolve() {
+  if [ -n "${VERCEL_PROFILE:-}" ]; then
+    printf '%s env\n' "$VERCEL_PROFILE"; return 0
+  fi
+  d=$PWD
+  while :; do
+    if [ -f "$d/$PIN_FILE" ]; then
+      printf '%s %s\n' "$(sed -n '1{s/[[:space:]]//g;p;}' "$d/$PIN_FILE")" "$d/$PIN_FILE"; return 0
+    fi
+    [ "$d" = "/" ] && break
+    d=$(dirname "$d")
+  done
+  if [ -f "$ACTIVE_FILE" ]; then
+    printf '%s global\n' "$(sed -n '1{s/[[:space:]]//g;p;}' "$ACTIVE_FILE")"; return 0
+  fi
+  return 1
+}
+
+# Finds the real vercel binary: first `vercel` on PATH that is not this shim dir.
+real_vercel() {
+  oldifs=$IFS; IFS=:
+  for p in $PATH; do
+    [ "$p" = "$SELF_DIR" ] && continue
+    if [ -x "$p/vercel" ]; then IFS=$oldifs; printf '%s/vercel' "$p"; return 0; fi
+  done
+  IFS=$oldifs
+  return 1
+}
+
+run_vercel() { # run_vercel <profile> <args...>
+  prof=$1; shift
+  require_profile "$prof"
+  real=$(real_vercel) || die "real vercel CLI not found on PATH" "install it: pnpm i -g vercel"
+  # Respect an explicit choice by the caller.
+  for a in "$@"; do
+    case "$a" in -Q|--global-config|--global-config=*|-t|--token|--token=*)
+      exec "$real" "$@" ;;
+    esac
+  done
+  [ -n "${VERCEL_TOKEN:-}" ] && exec "$real" "$@"
+  exec "$real" --global-config "$(profile_dir "$prof")" "$@"
+}
+
+shim() {
+  r=$(resolve) || die "no Vercel profile is active" "run: vcp use <name>   (or: vcp add <name>)"
+  prof=${r%% *}; src=${r#* }
+  valid_name "$prof" || die "bad profile name '$prof' from $src" "fix the file or run: vcp use <name>"
+  if [ -z "${VCP_QUIET:-}" ]; then
+    case "${1:-}" in
+      deploy|promote|rollback|remove|rm|redeploy|link|unlink|env|domains|dns|project|projects|"")
+        printf 'vcp: profile %s (%s)\n' "$prof" "$src" >&2 ;;
+    esac
+    for a in "$@"; do [ "$a" = "--prod" ] && { printf 'vcp: profile %s (%s)\n' "$prof" "$src" >&2; break; }; done
+  fi
+  run_vercel "$prof" "$@"
+}
+
+cmd_help() {
+cat <<'H'
+vcp: switch Vercel accounts
+
+  vcp add <name>      create a profile and log in to it
+  vcp import <name>   adopt the existing Vercel login as <name> (copies it)
+  vcp use <name>      set the global default profile
+  vcp pin [name]      write .vercel-profile here (default: current profile)
+  vcp unpin           remove .vercel-profile from here
+  vcp as <name> ...   run vercel once as <name>, e.g. vcp as work whoami
+  vcp current         show profile in effect and why
+  vcp whoami          ask Vercel who the current profile is
+  vcp ls              list profiles
+  vcp rm <name>       delete a profile (logs out)
+  vcp prompt          print just the profile name (for a prompt)
+  vcp doctor          check the setup
+  vcp version         print the version
+
+Resolution order: $VERCEL_PROFILE, nearest .vercel-profile upwards, global default.
+H
+}
+
+cmd_ls() {
+  [ -d "$PROFILES_DIR" ] || { echo "no profiles yet. run: vcp add <name>"; return 0; }
+  cur=$(resolve 2>/dev/null | cut -d' ' -f1)
+  for d in "$PROFILES_DIR"/*/; do
+    [ -d "$d" ] || continue
+    n=$(basename "$d")
+    if [ "$n" = "$cur" ]; then printf '* %s\n' "$n"; else printf '  %s\n' "$n"; fi
+  done
+}
+
+cmd_current() {
+  r=$(resolve) || die "no Vercel profile is active" "run: vcp use <name>"
+  printf '%s (from %s)\n' "${r%% *}" "${r#* }"
+}
+
+cmd_add() {
+  [ $# -eq 1 ] || die "usage: vcp add <name>"
+  valid_name "$1" || die "invalid profile name '$1'" "use lowercase letters, digits, - or _"
+  d=$(profile_dir "$1")
+  [ -e "$d" ] && die "profile '$1' already exists" "run: vcp use $1"
+  mkdir -p "$d" && chmod 700 "$PROFILES_DIR" "$d"
+  [ -f "$ACTIVE_FILE" ] || printf '%s\n' "$1" > "$ACTIVE_FILE"
+  echo "vcp: created '$1'. Logging in; use the Vercel account you want for '$1'."
+  run_vercel "$1" login
+}
+
+default_cli_dir() {
+  if [ -d "$HOME/Library/Application Support/com.vercel.cli" ]; then
+    printf '%s' "$HOME/Library/Application Support/com.vercel.cli"
+  else
+    printf '%s' "${XDG_DATA_HOME:-$HOME/.local/share}/com.vercel.cli"
+  fi
+}
+
+cmd_import() {
+  [ $# -eq 1 ] || die "usage: vcp import <name>"
+  valid_name "$1" || die "invalid profile name '$1'" "use lowercase letters, digits, - or _"
+  src=$(default_cli_dir)
+  [ -f "$src/auth.json" ] || die "no existing Vercel login at $src" "run: vcp add $1"
+  d=$(profile_dir "$1")
+  [ -e "$d" ] && die "profile '$1' already exists"
+  mkdir -p "$d" && chmod 700 "$PROFILES_DIR" "$d"
+  for f in auth.json config.json; do
+    [ -f "$src/$f" ] && cp "$src/$f" "$d/$f" && chmod 600 "$d/$f"
+  done
+  [ -f "$ACTIVE_FILE" ] || printf '%s\n' "$1" > "$ACTIVE_FILE"
+  echo "vcp: imported existing login as '$1' (original left untouched)."
+}
+
+cmd_use() {
+  [ $# -eq 1 ] || die "usage: vcp use <name>"
+  require_profile "$1"
+  printf '%s\n' "$1" > "$ACTIVE_FILE"
+  echo "vcp: default profile is now '$1'"
+}
+
+cmd_pin() {
+  if [ $# -ge 1 ]; then n=$1; else n=$(resolve | cut -d' ' -f1) || die "no profile to pin"; fi
+  require_profile "$n"
+  printf '%s\n' "$n" > "$PIN_FILE"
+  echo "vcp: pinned '$n' in $PWD/$PIN_FILE (commit it only if your team shares profile names)"
+}
+
+cmd_unpin() {
+  [ -f "$PIN_FILE" ] || die "no $PIN_FILE here"
+  rm "$PIN_FILE" && echo "vcp: unpinned"
+}
+
+cmd_rm() {
+  [ $# -eq 1 ] || die "usage: vcp rm <name>"
+  require_profile "$1"
+  rm -rf "$(profile_dir "$1")"
+  if [ -f "$ACTIVE_FILE" ] && [ "$(cat "$ACTIVE_FILE")" = "$1" ]; then rm "$ACTIVE_FILE"; echo "vcp: that was the default; run: vcp use <name>"; fi
+  echo "vcp: removed '$1'"
+}
+
+cmd_doctor() {
+  ok=0
+  if real=$(real_vercel); then echo "ok   real vercel: $real"; else echo "FAIL real vercel not found (npm i -g vercel)"; ok=1; fi
+  first=$(command -v vercel 2>/dev/null || true)
+  if [ "$first" = "$SELF_DIR/vercel" ]; then echo "ok   shim is first on PATH"
+  else echo "FAIL 'vercel' resolves to ${first:-nothing}, not $SELF_DIR/vercel (put $SELF_DIR first in PATH)"; ok=1; fi
+  if r=$(resolve); then echo "ok   profile in effect: ${r%% *} (${r#* })"; else echo "FAIL no active profile (vcp add <name>)"; ok=1; fi
+  for d in "$PROFILES_DIR"/*/; do
+    [ -d "$d" ] || continue
+    [ -f "$d/auth.json" ] && echo "ok   $(basename "$d") has a login" || echo "warn $(basename "$d") has no login (run: vcp as $(basename "$d") login)"
+  done
+  return $ok
+}
+
+# ---- dispatch -------------------------------------------------------------
+case "$(basename "$0")" in
+  vercel|vc) shim "$@" ;;
+esac
+
+[ $# -ge 1 ] || { cmd_help; exit 0; }
+sub=$1; shift
+case "$sub" in
+  add) cmd_add "$@" ;;
+  import) cmd_import "$@" ;;
+  use) cmd_use "$@" ;;
+  pin) cmd_pin "$@" ;;
+  unpin) cmd_unpin ;;
+  ls|list) cmd_ls ;;
+  current) cmd_current ;;
+  prompt) resolve 2>/dev/null | cut -d' ' -f1 ;;
+  rm|remove) cmd_rm "$@" ;;
+  doctor) cmd_doctor ;;
+  whoami) shim whoami "$@" ;;
+  as) [ $# -ge 1 ] || die "usage: vcp as <name> <vercel args>"; n=$1; shift; run_vercel "$n" "$@" ;;
+  version|-v|--version) echo "vcp $VCP_VERSION" ;;
+  help|-h|--help) cmd_help ;;
+  *) die "unknown command '$sub'" "run: vcp help" ;;
+esac
